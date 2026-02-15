@@ -10,7 +10,11 @@
 **SmartPanda** is an open-source initiative to reverse-engineer and modernize the Fiat Panda 169 platform. By interfacing directly with the vehicle's CAN Bus networks (B-CAN and C-CAN), this project aims to enable remote control via a mobile app, real-time telemetry, and smart automation.
 
 **Target Vehicle:** Fiat Panda (Model 169) - Year 2010
-
+<div align="center">
+  <br />
+  <img src="src/main/webapp/img/Icon.png" alt="TecnoDeposit Logo" width="180" />
+  <br /><br />
+</div>
 ---
 
 ## ⚡ Hardware Architecture
