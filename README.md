@@ -12,7 +12,7 @@
 **Target Vehicle:** Fiat Panda (Model 169) - Year 2010
 <div align="center">
   <br />
-  <img src="src/main/webapp/img/Icon.png" alt="TecnoDeposit Logo" width="180" />
+  <img src="assets/img/target_vehicle.png" alt="Target Vehicle" width="180" />
   <br /><br />
 </div>
 ---
