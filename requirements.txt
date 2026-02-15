@@ -1,0 +1,6 @@
+python-can>=4.0.0
+cantools>=38.0.0
+isotp>=1.8
+wrapt>=1.14.0
+packaging>=23.0
+typing-extensions>=4.5.0
