@@ -7,7 +7,7 @@
 **Select your language / Seleziona la lingua**
 <div align="center">
   <br />
-  <img src="assets/logos/PandaSmartCircle.png" alt="Target Vehicle" width="300" />
+  <img src="assets/img/target_vehicle.png" alt="Target Vehicle" width="300" />
   <br /><br />
 </div>
 
