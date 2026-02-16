@@ -5,6 +5,11 @@
 ![Logo](https://img.shields.io/badge/SmartPanda-v1.0-blue?style=for-the-badge&logo=fiat)
 
 **Select your language / Seleziona la lingua**
+<div align="center">
+  <br />
+  <img src="assets/logos/PandaSmartCircle.png" alt="Target Vehicle" width="300" />
+  <br /><br />
+</div>
 
 [![English](https://img.shields.io/badge/Lang-English-blue?style=for-the-badge&logo=us)](README_EN.md) &nbsp;&nbsp;&nbsp;&nbsp; [![Italiano](https://img.shields.io/badge/Lang-Italiano-green?style=for-the-badge&logo=it)](README_IT.md)
 
