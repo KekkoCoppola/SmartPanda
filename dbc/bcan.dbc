@@ -1,0 +1,49 @@
+VERSION "SmartPanda B-CAN 0.1"
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: BCM
+
+BO_ 384 STATO_LUCI: 6 BCM
+ SG_ RETRONEBBIA : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ FENDINEBBIA : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ANABBAGLIANTI : 11|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ABBAGLIANTI : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ POSIZIONE : 13|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ FRECCIA_DX : 21|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ FRECCIA_SX : 22|1@1+ (1,0) [0|1] "" Vector__XXX
+
+CM_ BO_ 384 "Stato luci esterne dal Body Computer (B-CAN, can1, 50 kbps). ID 0x180, DLC 6. Mappato via sniffing 2026-07-14 su Fiat Panda 169 (2010).";
+CM_ SG_ 384 POSIZIONE "Luci di posizione: osservato byte1=0x60 (entrambi i bit alti) quando accese. Atteso: 3=on, 0=off.";
+CM_ SG_ 384 ABBAGLIANTI "Osservato byte1=0x10 da solo (probabile lampeggio a luci spente). DA VERIFICARE con anabbaglianti accesi: atteso byte1=0x78.";
+CM_ SG_ 384 FRECCIA_DX "DA VERIFICARE: bit segue il lampeggio della lampada (toggle ~500ms) o resta fisso finche' la leva e' attiva.";
