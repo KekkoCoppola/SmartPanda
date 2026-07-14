@@ -47,10 +47,13 @@ We tap into both the **C-CAN** (High Speed / Engine) and **B-CAN** (Low Speed / 
 | **GND** | 4 & 5 | GND | - | - | Signal & Chassis Ground |
 | **CAN H** | 6 | H (CH 0) | `can0` | **500 kbps** | **C-CAN** (Engine, ABS, City) |
 | **CAN L** | 14 | L (CH 0) | `can0` | **500 kbps** | **C-CAN** (Engine, ABS, City) |
-| **LS-CAN L**| 1 | L (CH 1) | `can1` | **50 kbps** | **B-CAN** (Body, Lights, Doors) |
-| **LS-CAN H**| 9 | H (CH 1) | `can1` | **50 kbps** | **B-CAN** (Body, Lights, Doors) |
+| **LS-CAN L**| 1 | L (CH 1) | `can1` | **50 kbps** | **B-CAN** (Body, Lights, Doors) — ⚠️ see warning below |
+| **LS-CAN H**| 9 | H (CH 1) | `can1` | **50 kbps** | **B-CAN** (Body, Lights, Doors) — ⚠️ see warning below |
 
 > **⚠️ Warning:** Do NOT power the Raspberry Pi directly from the 12V OBD Pin unless you have a verified HAT with a wide-input voltage regulator. Most HATs only take 5V. Use a dedicated Step-Down converter!
+
+> **🔴 B-CAN transceiver incompatibility:** The Waveshare 2-CH CAN HAT uses **SN65HVD230** transceivers, which implement the **high-speed ISO 11898-2** physical layer. The Fiat B-CAN is a **low-speed fault-tolerant ISO 11898-3** network with different (incompatible) voltage levels and per-node termination. In practice, CH 1 wired to OBD pins 1/9 will most likely read nothing (or only garbage/error frames), and the HAT's 120 Ω differential termination can disturb the car's B-CAN even in listen-only mode (stuck doors, warning lights, etc.).
+> **Do not wire OBD pins 1/9 to this HAT.** To read B-CAN you need a fault-tolerant transceiver (e.g. NXP TJA1054/TJA1055) between the bus and the MCP2515. Alternatively, start with C-CAN only: the Body Computer acts as a gateway and mirrors many body events (doors, lights) onto the C-CAN.
 
 ---
 
@@ -96,6 +99,8 @@ To identify specific packets (e.g., Door Open, Headlights On), use `candump` and
 ```bash
 cansniffer -c can1
 ```
+
+*Note: `can1` (B-CAN) only works with a fault-tolerant transceiver (see warning above). Until then, sniff `can0` (C-CAN) — many body events are gatewayed there too.*
 
 Interact with the car (open a window, toggle lights) and watch for changing hex values!
 
