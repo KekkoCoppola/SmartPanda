@@ -47,10 +47,13 @@ Ci colleghiamo a entrambe le reti **C-CAN** (Alta Velocità / Motore) e **B-CAN*
 | **GND** | 4 & 5 | GND | - | - | Massa Segnale e Telaio |
 | **CAN H** | 6 | H (CH 0) | `can0` | **500 kbps** | **C-CAN** (Motore, ABS, City) |
 | **CAN L** | 14 | L (CH 0) | `can0` | **500 kbps** | **C-CAN** (Motore, ABS, City) |
-| **LS-CAN L**| 1 | L (CH 1) | `can1` | **50 kbps** | **B-CAN** (Carrozzeria, Luci, Porte) |
-| **LS-CAN H**| 9 | H (CH 1) | `can1` | **50 kbps** | **B-CAN** (Carrozzeria, Luci, Porte) |
+| **LS-CAN L**| 1 | L (CH 1) | `can1` | **50 kbps** | **B-CAN** (Carrozzeria, Luci, Porte) — ⚠️ vedi avvertenza sotto |
+| **LS-CAN H**| 9 | H (CH 1) | `can1` | **50 kbps** | **B-CAN** (Carrozzeria, Luci, Porte) — ⚠️ vedi avvertenza sotto |
 
 > **⚠️ Attenzione:** NON alimentare il Raspberry Pi direttamente dal Pin OBD 12V a meno che tu non abbia un HAT verificato con un regolatore di tensione ad ampio ingresso. La maggior parte degli HAT accetta solo 5V. Usa un convertitore Step-Down dedicato!
+
+> **🔴 Incompatibilità transceiver B-CAN:** Il Waveshare 2-CH CAN HAT monta transceiver **SN65HVD230**, che implementano il livello fisico **high-speed ISO 11898-2**. La B-CAN Fiat è invece una rete **low-speed fault-tolerant ISO 11898-3**, con livelli di tensione diversi (incompatibili) e terminazione per-nodo. In pratica, il CH 1 collegato ai pin OBD 1/9 con ogni probabilità non leggerà nulla (o solo spazzatura/error frame), e la terminazione differenziale da 120 Ω dell'HAT può disturbare la B-CAN dell'auto anche in listen-only (porte bloccate, spie accese, ecc.).
+> **Non collegare i pin OBD 1/9 a questo HAT.** Per leggere la B-CAN serve un transceiver fault-tolerant (es. NXP TJA1054/TJA1055) tra il bus e il MCP2515. In alternativa, parti solo dalla C-CAN: il Body Computer fa da gateway e replica molti eventi carrozzeria (porte, luci) sulla C-CAN.
 
 ---
 
@@ -96,6 +99,8 @@ Per identificare pacchetti specifici (es. Porta Aperta, Luci Accese), usa `candu
 ```bash
 cansniffer -c can1
 ```
+
+*Nota: `can1` (B-CAN) funziona solo con un transceiver fault-tolerant (vedi avvertenza sopra). Nel frattempo sniffa `can0` (C-CAN) — molti eventi carrozzeria passano anche da lì tramite il gateway.*
 
 Interagisci con l'auto (apri un finestrino, accendi le luci) e osserva i valori esadecimali cambiare!
 

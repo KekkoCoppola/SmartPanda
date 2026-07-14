@@ -12,8 +12,10 @@ The repository currently contains only setup tooling and documentation (`setup_c
 
 This is not a typical software repo — code here runs on a Raspberry Pi (3B+/4, Raspberry Pi OS Lite) wired into the car's OBD-II port via a Waveshare 2-CH CAN HAT (MCP2515-based), and it interacts with **two physically distinct CAN networks**:
 
-- `can0` = **C-CAN** (high-speed, 500 kbps) — engine, ABS, power steering. Safety-critical; per the README disclaimer, never inject/send messages here while driving.
-- `can1` = **B-CAN** (low-speed, 50 kbps) — body computer, dashboard, lights, doors, windows.
+- `can0` = **C-CAN** (high-speed, 500 kbps, ISO 11898-2) — engine, ABS, power steering. Safety-critical; per the README disclaimer, never inject/send messages here while driving.
+- `can1` = **B-CAN** (low-speed, 50 kbps, **ISO 11898-3 fault-tolerant**) — body computer, dashboard, lights, doors, windows.
+
+**Important hardware limitation:** the HAT's SN65HVD230 transceivers are high-speed (ISO 11898-2) only and cannot read the fault-tolerant B-CAN physical layer — `can1` is not usable against the car until a fault-tolerant transceiver (e.g. TJA1054/TJA1055) is added (see the B-CAN warning in the READMEs). Until then, all real-world sniffing/decoding work happens on `can0` (C-CAN), where the Body Computer also gateways many body events.
 
 Any code that talks to the bus needs to be written with this dual-network split in mind (separate interfaces, separate bitrates, separate risk profiles for read-only sniffing vs. active message injection).
 
