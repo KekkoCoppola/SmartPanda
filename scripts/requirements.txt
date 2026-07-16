@@ -1,0 +1,3 @@
+# Dev-machine tooling (GLB inspection/rigging) — not needed on the Raspberry Pi
+pygltflib
+numpy

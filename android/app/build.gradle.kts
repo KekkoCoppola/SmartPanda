@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.smartpanda.app"
-        minSdk = 26
+        minSdk = 28  // SceneView/Filament requirement
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
@@ -35,6 +35,9 @@ android {
     buildFeatures {
         compose = true
     }
+    androidResources {
+        noCompress += "glb"
+    }
 }
 
 dependencies {
@@ -46,5 +49,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.sceneview)
     debugImplementation(libs.androidx.ui.tooling)
 }

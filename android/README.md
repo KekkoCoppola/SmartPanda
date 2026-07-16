@@ -17,7 +17,9 @@ Open **this folder** (`android/`, not the repo root) in Android Studio:
 2. Android Studio will generate the Gradle wrapper JAR and `local.properties` (both git-ignored) on first sync.
 3. Run the `app` configuration on an emulator or device.
 
-The project currently shows a placeholder home screen. Real features depend on the Pi middleware exposing an API (WebSocket/REST) — see the roadmap in the root [README](../README_EN.md).
+The app shows the rigged 3D model (`app/src/main/assets/models/panda_rigged.glb`, rendered with [SceneView](https://github.com/SceneView/sceneview-android)) with test chips that open/close doors and toggle lights. The clip/material ↔ CAN-event mapping is documented in [docs/model_map.md](../docs/model_map.md); wiring the real CAN state comes with the Fase 2 middleware.
+
+If you regenerate the model (`python scripts/rig_panda_glb.py`), re-copy it into `app/src/main/assets/models/`.
 
 ## Planned structure
 

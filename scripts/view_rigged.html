@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SmartPanda — rigged model viewer</title>
+<style>
+  body { margin: 0; overflow: hidden; font-family: system-ui, sans-serif; background: #202225; }
+  #ui { position: fixed; top: 10px; left: 10px; z-index: 10; display: flex; flex-direction: column; gap: 6px; }
+  #ui button { padding: 8px 14px; border: 0; border-radius: 6px; cursor: pointer; background: #3a3f47; color: #eee; text-align: left; }
+  #ui button.on { background: #2e7d32; }
+  #status { position: fixed; bottom: 10px; left: 10px; color: #aaa; z-index: 10; }
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="ui"></div>
+<div id="status">loading model…</div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x202225);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 100);
+camera.position.set(4, 2.2, 5);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.7, 0);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444455, 2.2));
+const dir = new THREE.DirectionalLight(0xffffff, 2.5);
+dir.position.set(5, 8, 6);
+scene.add(dir);
+scene.add(new THREE.GridHelper(10, 20, 0x555555, 0x333333));
+
+const mixerClock = new THREE.Clock();
+let mixer = null;
+const actions = {};
+const lampMats = {};
+const ui = document.getElementById('ui');
+const status = document.getElementById('status');
+
+const LAMP_COLORS = {
+  mat_headlights: 0xffffdd,
+  mat_taillights: 0xff2222,
+  mat_foglights: 0xddddff,
+  mat_indicators: 0xffaa00,
+  mat_stoplight: 0xff0000,
+};
+
+new GLTFLoader().load('../assets/model/panda_rigged.glb', (gltf) => {
+  scene.add(gltf.scene);
+  mixer = new THREE.AnimationMixer(gltf.scene);
+
+  gltf.scene.traverse((o) => {
+    if (o.material && LAMP_COLORS[o.material.name] !== undefined) {
+      lampMats[o.material.name] = o.material;
+    }
+  });
+
+  for (const clip of gltf.animations) {
+    const action = mixer.clipAction(clip);
+    action.clampWhenFinished = true;
+    action.setLoop(THREE.LoopOnce);
+    actions[clip.name] = { action, duration: clip.duration, open: false };
+    const btn = document.createElement('button');
+    btn.textContent = `▶ ${clip.name}`;
+    btn.onclick = () => {
+      const st = actions[clip.name];
+      st.open = !st.open;
+      st.action.paused = false;
+      if (st.open) {
+        if (!st.action.isRunning()) { st.action.reset(); }
+        st.action.timeScale = 1;
+        st.action.play();
+      } else {
+        if (!st.action.isRunning()) { st.action.play(); st.action.time = st.duration; }
+        st.action.timeScale = -1;
+      }
+      btn.classList.toggle('on', st.open);
+    };
+    ui.appendChild(btn);
+  }
+
+  for (const [name, color] of Object.entries(LAMP_COLORS)) {
+    const btn = document.createElement('button');
+    const found = lampMats[name] ? '' : ' (missing!)';
+    btn.textContent = `💡 ${name}${found}`;
+    let on = false;
+    btn.onclick = () => {
+      if (!lampMats[name]) return;
+      on = !on;
+      lampMats[name].emissive.set(on ? color : 0x000000);
+      lampMats[name].emissiveIntensity = on ? 3 : 1;
+      btn.classList.toggle('on', on);
+    };
+    ui.appendChild(btn);
+  }
+
+  status.textContent =
+    `clips: ${gltf.animations.map((c) => c.name).join(', ')} | ` +
+    `lamp materials found: ${Object.keys(lampMats).join(', ')}`;
+  // debug hooks
+  window.__scene = scene;
+  window.__THREE = THREE;
+  window.__actions = actions;
+  window.__renderer = renderer;
+  window.__camera = camera;
+  window.__mixer = mixer;
+}, undefined, (err) => { status.textContent = 'ERROR: ' + err; });
+
+renderer.setAnimationLoop(() => {
+  if (mixer) mixer.update(mixerClock.getDelta());
+  controls.update();
+  renderer.render(scene, camera);
+});
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
