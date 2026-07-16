@@ -208,3 +208,6 @@ __marimo__/
 
 # Personal credentials
 credentials.md
+
+# Windows/Cygwin crash dumps
+*.stackdump

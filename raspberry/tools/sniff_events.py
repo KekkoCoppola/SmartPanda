@@ -8,8 +8,8 @@ NEW arbitration IDs and payload CHANGES, including 29-bit extended IDs
 Changed bytes are highlighted in red. Periodic messages that keep the
 same payload print once and stay quiet afterwards.
 
-Usage (on the Raspberry Pi, after ./setup_can.sh):
-    python3 tools/sniff_events.py [--channel can1] [--ignore 180,5E0]
+Usage (on the Raspberry Pi, after ./raspberry/setup_can.sh):
+    python3 raspberry/tools/sniff_events.py [--channel can1] [--ignore 180,5E0]
 
     --ignore  comma-separated hex IDs to mute (e.g. already-mapped ones)
 """

@@ -22,6 +22,26 @@
 
 ---
 
+## 📂 Repository Structure
+
+The repo is a monorepo hosting both sides of the project:
+
+```
+SmartPanda/
+├── raspberry/          # Everything that runs on the Raspberry Pi
+│   ├── setup_can.sh    #   CAN interface bring-up (can0/can1)
+│   ├── requirements.txt
+│   └── tools/          #   sniffing & live-decoding scripts
+├── android/            # Android companion app (Kotlin + Jetpack Compose)
+├── dbc/                # Shared CAN message definitions (DBC files)
+├── docs/               # Shared docs (reverse-engineered ID maps)
+└── assets/             # Images & logos
+```
+
+`dbc/` and `docs/` sit at the root because they describe the car's protocol — knowledge shared by the Pi middleware and the app.
+
+---
+
 ## ⚡ Hardware & Requirements
 
 ### Hardware Components
@@ -66,7 +86,7 @@ Clone the repository and install dependencies:
 ```bash
 git clone https://github.com/yourusername/SmartPanda.git
 cd SmartPanda
-pip install -r requirements.txt
+pip install -r raspberry/requirements.txt
 ```
 
 ### 2. Configure CAN Interfaces
@@ -74,8 +94,8 @@ pip install -r requirements.txt
 We have provided a script to automatically bring up the CAN interfaces with the correct bitrates.
 
 ```bash
-chmod +x setup_can.sh
-./setup_can.sh
+chmod +x raspberry/setup_can.sh
+./raspberry/setup_can.sh
 ```
 
 *This sets `can0` to 500kbps (C-CAN) and `can1` to 50kbps (B-CAN).*
@@ -118,7 +138,8 @@ Interact with the car (open a window, toggle lights) and watch for changing hex 
     - [ ] Python Service for message parsing
     - [ ] Database integration (InfluxDB/SQLite)
 - [ ] **Phase 3: User Interface**
-    - [ ] Mobile App / Web Dashboard
+    - [x] Android app scaffold (`android/`, Kotlin + Jetpack Compose)
+    - [ ] Mobile App features / Web Dashboard
 - [ ] **Phase 4: Active Control**
     - [ ] Injecting messages to control windows/lights
 

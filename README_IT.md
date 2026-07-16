@@ -22,6 +22,26 @@
 
 ---
 
+## 📂 Struttura della Repository
+
+La repo è un monorepo che ospita entrambi i lati del progetto:
+
+```
+SmartPanda/
+├── raspberry/          # Tutto ciò che gira sul Raspberry Pi
+│   ├── setup_can.sh    #   attivazione interfacce CAN (can0/can1)
+│   ├── requirements.txt
+│   └── tools/          #   script di sniffing e decodifica live
+├── android/            # App Android companion (Kotlin + Jetpack Compose)
+├── dbc/                # Definizioni messaggi CAN condivise (file DBC)
+├── docs/               # Documentazione condivisa (mappe ID)
+└── assets/             # Immagini e loghi
+```
+
+`dbc/` e `docs/` stanno alla radice perché descrivono il protocollo dell'auto — conoscenza condivisa tra il middleware sul Pi e l'app.
+
+---
+
 ## ⚡ Hardware e Requisiti
 
 ### Componenti Hardware
@@ -66,7 +86,7 @@ Clona la repository e installa le dipendenze:
 ```bash
 git clone https://github.com/tuousername/SmartPanda.git
 cd SmartPanda
-pip install -r requirements.txt
+pip install -r raspberry/requirements.txt
 ```
 
 ### 2. Configura Interfacce CAN
@@ -74,8 +94,8 @@ pip install -r requirements.txt
 Abbiamo fornito uno script per attivare automaticamente le interfacce CAN con i bitrate corretti.
 
 ```bash
-chmod +x setup_can.sh
-./setup_can.sh
+chmod +x raspberry/setup_can.sh
+./raspberry/setup_can.sh
 ```
 
 *Questo imposta `can0` a 500kbps (C-CAN) e `can1` a 50kbps (B-CAN).*
@@ -118,7 +138,8 @@ Interagisci con l'auto (apri un finestrino, accendi le luci) e osserva i valori 
     - [ ] Servizio Python per parsing messaggi
     - [ ] Integrazione Database (InfluxDB/SQLite)
 - [ ] **Fase 3: Interfaccia Utente**
-    - [ ] App Mobile / Dashboard Web
+    - [x] Scaffold app Android (`android/`, Kotlin + Jetpack Compose)
+    - [ ] Funzionalità App Mobile / Dashboard Web
 - [ ] **Fase 4: Controllo Attivo**
     - [ ] Iniezione messaggi per controllare finestrini/luci
 

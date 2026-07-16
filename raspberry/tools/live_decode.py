@@ -6,8 +6,8 @@ every message defined in dbc/bcan.dbc. Use it to verify the ID map
 against the real car: toggle a light and check that the right signal
 flips.
 
-Usage (on the Raspberry Pi, after ./setup_can.sh):
-    python3 tools/live_decode.py [--channel can1] [--dbc dbc/bcan.dbc]
+Usage (on the Raspberry Pi, after ./raspberry/setup_can.sh):
+    python3 raspberry/tools/live_decode.py [--channel can1] [--dbc dbc/bcan.dbc]
 """
 
 import argparse
@@ -17,7 +17,7 @@ from pathlib import Path
 import can
 import cantools
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def main() -> int:
