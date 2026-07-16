@@ -56,6 +56,10 @@ CLIP_SECONDS = 1.0
 # Body color (sRGB hex), applied to the 'Fiat_Panda_2011_carpaint' material.
 CARPAINT_HEX = "#84A9B2"
 
+# License plate text (replaces the stock 3D "HUMSTER3D" lettering with a
+# generated Italian-style plate texture on both plates).
+PLATE_TEXT = "EA 273 EJ"
+
 
 def srgb_to_linear(hex_color: str):
     def chan(c: int) -> float:
@@ -198,6 +202,127 @@ def split_mesh(gltf, blob, builder, mesh_idx: int):
     return mesh_neg, mesh_pos, verts_neg, verts_pos
 
 
+def make_plate_png(text: str) -> bytes:
+    """Render an Italian-style license plate (white, blue side bands) as PNG."""
+    import io
+
+    from PIL import Image as PILImage
+    from PIL import ImageDraw, ImageFont
+
+    w, h = 1040, 220
+    img = PILImage.new("RGB", (w, h), "#F4F4F4")
+    d = ImageDraw.Draw(img)
+    band = 74
+    d.rectangle([0, 0, band, h], fill="#003399")
+    d.rectangle([w - band, 0, w, h], fill="#003399")
+    d.rectangle([0, 0, w - 1, h - 1], outline="#111111", width=6)
+    # EU stars (left band) + country letter
+    import math
+    cx, cy, rr = band // 2, 62, 24
+    for k in range(12):
+        a = k * math.pi / 6
+        d.ellipse([cx + rr * math.sin(a) - 4, cy - rr * math.cos(a) - 4,
+                   cx + rr * math.sin(a) + 4, cy - rr * math.cos(a) + 4], fill="#FFCC00")
+    try:
+        f_small = ImageFont.truetype("arialbd.ttf", 60)
+        f_text = ImageFont.truetype("arialbd.ttf", 150)
+    except OSError:
+        f_small = f_text = ImageFont.load_default()
+    d.text((cx, 160), "I", font=f_small, fill="white", anchor="mm")
+    d.text(((w) // 2, h // 2 + 6), text, font=f_text, fill="#111111", anchor="mm")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def replace_plates(gltf, blob, builder):
+    """Swap the stock 3D plate lettering for a textured quad with PLATE_TEXT.
+
+    Keeps the white plate body (_04); removes lettering (_02), logo (_01)
+    and blue band (_03); adds a quad 0.4 cm in front of the body, oriented
+    by PCA of the body's vertices. Returns the bare holder name of the rear
+    quad so it can join the tailgate group.
+    """
+    from pygltflib import Image as GltfImage
+    from pygltflib import Sampler, Texture, TextureInfo
+
+    png = make_plate_png(PLATE_TEXT)
+    offset = builder._append(png)
+    gltf.bufferViews.append(BufferView(buffer=0, byteOffset=offset, byteLength=len(png)))
+    gltf.images.append(GltfImage(bufferView=len(gltf.bufferViews) - 1, mimeType="image/png"))
+    gltf.samplers.append(Sampler(magFilter=9729, minFilter=9987, wrapS=33071, wrapT=33071))
+    gltf.textures.append(Texture(sampler=len(gltf.samplers) - 1, source=len(gltf.images) - 1))
+    gltf.materials.append(Material(
+        name="mat_plate",
+        pbrMetallicRoughness=PbrMetallicRoughness(
+            baseColorTexture=TextureInfo(index=len(gltf.textures) - 1),
+            metallicFactor=0.0, roughnessFactor=0.6),
+        emissiveFactor=[0.0, 0.0, 0.0], alphaMode="OPAQUE"))
+    plate_mat = len(gltf.materials) - 1
+
+    root = 2
+    rear_bare = None
+    for prefix, tag in (("LicPlate01", "F"), ("LicPlate02", "R")):
+        bg_holder = find_holder(gltf, f"{prefix}_04")
+        t = matrix_translation(gltf.nodes[bg_holder])
+        geo = geo_child(gltf, bg_holder)
+        prim = gltf.meshes[gltf.nodes[geo].mesh].primitives[0]
+        verts = read_accessor(gltf, blob, prim.attributes.POSITION).astype(np.float64)
+        # Normal from PCA (smallest-variance axis), constrained to the Y/Z
+        # plane: plates are symmetric about X, only tilted around it.
+        evec = np.linalg.eigh(np.cov((verts - verts.mean(axis=0)).T)).eigenvectors
+        n = evec[:, 0].copy()
+        n[0] = 0.0
+        n /= np.linalg.norm(n)
+        outward = 1.0 if t[2] >= 0 else -1.0  # front plate faces +Z, rear -Z
+        if n[2] * outward < 0:
+            n = -n
+        v = np.cross(n, [1.0, 0.0, 0.0])
+        if v[1] < 0:
+            v = -v
+        u = np.cross(v, n)  # u x v == n
+        # Extents and true geometric center from projection ranges (the
+        # vertex-density mean is skewed toward the rounded corners).
+        pu, pv, pn = (verts @ u), (verts @ v), (verts @ n)
+        hu = float(pu.max() - pu.min()) / 2
+        hv = float(pv.max() - pv.min()) / 2
+        cq = (u * (pu.max() + pu.min()) / 2
+              + v * (pv.max() + pv.min()) / 2
+              + n * pn.max() + n * 0.4)
+        quad = np.array([cq - u * hu + v * hv, cq + u * hu + v * hv,
+                         cq - u * hu - v * hv, cq + u * hu - v * hv], dtype=np.float32)
+        normals = np.tile(n.astype(np.float32), (4, 1))
+        uvs = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=np.float32)
+        idx = np.array([[0], [2], [1], [1], [2], [3]], dtype=np.uint32)
+
+        attrs = Attributes(
+            POSITION=builder.add_accessor(quad, "VEC3", 5126, 34962, True),
+            NORMAL=builder.add_accessor(normals, "VEC3", 5126, 34962, False),
+            TEXCOORD_0=builder.add_accessor(uvs, "VEC2", 5126, 34962, False),
+        )
+        gltf.meshes.append(Mesh(name=f"plate_{tag}_quad", primitives=[Primitive(
+            attributes=attrs,
+            indices=builder.add_accessor(idx, "SCALAR", 5125, 34963, False),
+            material=plate_mat, mode=4)]))
+        gltf.nodes.append(Node(name=f"plate_{tag}_geo", mesh=len(gltf.meshes) - 1))
+        geo_i = len(gltf.nodes) - 1
+        gltf.nodes.append(Node(
+            name=f"{PFX}LicPlateTex_{tag}",
+            matrix=[1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, t[0], t[1], t[2], 1],
+            children=[geo_i]))
+        holder_i = len(gltf.nodes) - 1
+        gltf.nodes[root].children.append(holder_i)
+        if tag == "R":
+            rear_bare = "LicPlateTex_R"
+
+        # drop lettering, logo and blue band; keep the white body (_04)
+        for part in ("_01", "_02", "_03"):
+            gltf.nodes[root].children.remove(find_holder(gltf, prefix + part))
+        print(f"plate {tag}: quad {2 * hu:.1f}x{2 * hv:.1f} at {[round(x, 1) for x in t]}"
+              f" n={[round(x, 2) for x in n]}")
+    return rear_bare
+
+
 def quat_y(deg):
     r = math.radians(deg) / 2
     return [0.0, math.sin(r), 0.0, math.cos(r)]
@@ -313,9 +438,12 @@ def main() -> int:
         print(f"{pname}: hinge at {[round(v, 1) for v in hinge]} "
               f"(side x{'<0' if side == 'neg' else '>=0'})")
 
+    # ---- license plates: textured quads with PLATE_TEXT
+    rear_plate = replace_plates(gltf, blob, builder)
+
     # ---- tailgate group (single central mesh, no splitting needed)
     tail_bare = ["Trunk", "Trunk_Chrom", "Trunk_Key", "Window3", "Window_Frame",
-                 "LicPlate02_01", "LicPlate02_02", "LicPlate02_03", "LicPlate02_04"]
+                 "LicPlate02_04", rear_plate]
     trunk_holder = find_holder(gltf, "Trunk")
     trunk_geo = geo_child(gltf, trunk_holder)
     trunk_t = matrix_translation(gltf.nodes[trunk_holder])
