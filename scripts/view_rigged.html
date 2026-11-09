@@ -51,34 +51,61 @@ const status = document.getElementById('status');
 
 const LAMP_COLORS = {
   mat_headlights: 0xffffdd,
-  mat_taillights: 0xff2222,
+  mat_stoplight: 0xff0000,
   mat_foglights: 0xddddff,
   mat_indicators: 0xffaa00,
-  mat_stoplight: 0xff0000,
 };
+// Driven, not toggled: the front indicator is a corner cut out of the headlamp
+// lens, so when it is not blinking it takes the headlight colour and the lens
+// reads as one piece instead of showing a hole.
+const INDICATOR_FRONT = 'mat_indicator_front';
+const lampOn = {};
+
+function setEmissive(name, color) {
+  const mat = lampMats[name];
+  if (!mat) return;
+  mat.emissive.set(color);
+  mat.emissiveIntensity = color ? 3 : 1;
+}
+
+function refreshLamps() {
+  for (const [name, color] of Object.entries(LAMP_COLORS)) {
+    setEmissive(name, lampOn[name] ? color : 0x000000);
+  }
+  setEmissive(INDICATOR_FRONT,
+    lampOn.mat_indicators ? LAMP_COLORS.mat_indicators
+      : lampOn.mat_headlights ? LAMP_COLORS.mat_headlights
+        : 0x000000);
+}
 
 new GLTFLoader().load('../assets/model/panda_rigged.glb', (gltf) => {
   scene.add(gltf.scene);
   mixer = new THREE.AnimationMixer(gltf.scene);
 
   gltf.scene.traverse((o) => {
-    if (o.material && LAMP_COLORS[o.material.name] !== undefined) {
+    if (!o.material) return;
+    if (LAMP_COLORS[o.material.name] !== undefined || o.material.name === INDICATOR_FRONT) {
       lampMats[o.material.name] = o.material;
     }
   });
 
   for (const clip of gltf.animations) {
+    const looping = clip.name === 'running';
     const action = mixer.clipAction(clip);
-    action.clampWhenFinished = true;
-    action.setLoop(THREE.LoopOnce);
+    action.clampWhenFinished = !looping;
+    action.setLoop(looping ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
     actions[clip.name] = { action, duration: clip.duration, open: false };
     const btn = document.createElement('button');
-    btn.textContent = `▶ ${clip.name}`;
+    btn.textContent = `${looping ? '⟳' : '▶'} ${clip.name}`;
     btn.onclick = () => {
       const st = actions[clip.name];
       st.open = !st.open;
       st.action.paused = false;
-      if (st.open) {
+      if (looping) {
+        // play/stop: a looping clip has no meaningful reverse
+        if (st.open) { st.action.reset(); st.action.timeScale = 1; st.action.play(); }
+        else { st.action.stop(); }
+      } else if (st.open) {
         if (!st.action.isRunning()) { st.action.reset(); }
         st.action.timeScale = 1;
         st.action.play();
@@ -91,17 +118,16 @@ new GLTFLoader().load('../assets/model/panda_rigged.glb', (gltf) => {
     ui.appendChild(btn);
   }
 
-  for (const [name, color] of Object.entries(LAMP_COLORS)) {
+  for (const name of Object.keys(LAMP_COLORS)) {
     const btn = document.createElement('button');
     const found = lampMats[name] ? '' : ' (missing!)';
     btn.textContent = `💡 ${name}${found}`;
-    let on = false;
+    lampOn[name] = false;
     btn.onclick = () => {
       if (!lampMats[name]) return;
-      on = !on;
-      lampMats[name].emissive.set(on ? color : 0x000000);
-      lampMats[name].emissiveIntensity = on ? 3 : 1;
-      btn.classList.toggle('on', on);
+      lampOn[name] = !lampOn[name];
+      refreshLamps();
+      btn.classList.toggle('on', lampOn[name]);
     };
     ui.appendChild(btn);
   }

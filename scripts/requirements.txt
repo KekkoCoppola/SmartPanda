@@ -1,3 +1,5 @@
 # Dev-machine tooling (GLB inspection/rigging) — not needed on the Raspberry Pi
 pygltflib
 numpy
+pillow
+fast-simplification   # decimazione quadric delle mesh non visibili da vicino
